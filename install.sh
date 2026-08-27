@@ -61,8 +61,28 @@ fi
 ok "Command Line Tools на месте"
 
 if ! command -v brew >/dev/null 2>&1; then
-  die "Не найден Homebrew — через него ставятся ffmpeg и Python.
-     Установите с https://brew.sh и запустите install.sh снова."
+  # Возможно, brew стоит, но его нет в PATH этой сессии (частый случай на M1/M2).
+  for brew_path in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    [[ -x "$brew_path" ]] && { eval "$("$brew_path" shellenv)"; break; }
+  done
+fi
+
+if ! command -v brew >/dev/null 2>&1; then
+  warn "Не найден Homebrew — через него ставятся ffmpeg и свежий Python."
+  echo "     Это стандартный менеджер программ для Mac. Установка занимает"
+  echo "     пару минут и попросит пароль от вашего компьютера (при вводе"
+  echo "     символы не отображаются — это нормально)."
+  if confirm "Установить Homebrew сейчас?"; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/tty
+    for brew_path in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+      [[ -x "$brew_path" ]] && { eval "$("$brew_path" shellenv)"; break; }
+    done
+    command -v brew >/dev/null 2>&1 || die "Homebrew установился, но не появился в PATH.
+     Закройте терминал, откройте заново и запустите install.sh ещё раз."
+  else
+    die "Без Homebrew установка не пройдёт. Поставить можно позже с https://brew.sh
+     и запустить install.sh снова."
+  fi
 fi
 ok "Homebrew на месте"
 
